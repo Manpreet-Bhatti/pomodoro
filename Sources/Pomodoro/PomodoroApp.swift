@@ -12,15 +12,17 @@ import UserNotifications
         let engine = TimerEngine(context: container.mainContext)
         engine.onFinish = Self.notify
         _engine = State(initialValue: engine)
-        NSApplication.shared.setActivationPolicy(.regular) // SwiftPM executables start as background apps
+        NSApplication.shared.setActivationPolicy(.regular)  // SwiftPM executables start as background apps
         if Bundle.main.bundleIdentifier != nil {
-            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) {
+                _, _ in
+            }
         }
     }
 
     var body: some Scene {
         Window("Pomodoro", id: "main") {
-            ContentView()
+            ContentView().tint(.sakura)
         }
         .environment(engine)
         .modelContainer(container)
@@ -40,7 +42,7 @@ import UserNotifications
         }
 
         Settings {
-            SettingsView().environment(engine)
+            SettingsView().environment(engine).tint(.sakura)
         }
     }
 
@@ -51,7 +53,8 @@ import UserNotifications
         let content = UNMutableNotificationContent()
         content.title = "\(finished.label) done"
         content.body = finished.isBreak ? "Back to focus." : "Take a break."
-        UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
+        UNUserNotificationCenter.current().add(
+            UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
     }
 }
 
