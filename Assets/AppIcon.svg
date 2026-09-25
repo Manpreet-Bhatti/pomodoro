@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF7F9"/>
+      <stop offset="1" stop-color="#FFDCE5"/>
+    </linearGradient>
+    <radialGradient id="petal" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="340">
+      <stop offset="0.15" stop-color="#E8537A"/>
+      <stop offset="0.55" stop-color="#FF9DB5"/>
+      <stop offset="1" stop-color="#FFD3DE"/>
+    </radialGradient>
+    <!-- Notched sakura petal pointing up from the flower centre. -->
+    <path id="p" d="M0 -40 C-55 -80 -160 -180 -125 -285 C-105 -335 -50 -345 -16 -318 L0 -288 L16 -318 C50 -345 105 -335 125 -285 C160 -180 55 -80 0 -40 Z"/>
+    <path id="v" d="M0 -60 L0 -250 M0 -90 L-38 -215 M0 -90 L38 -215"/>
+  </defs>
+
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)"/>
+
+  <g transform="translate(512 555) scale(0.9)">
+    <!-- Stopwatch crown, sits in the gap between the top two petals. -->
+    <rect x="-24" y="-395" width="48" height="260" rx="10" fill="#8B5A2B"/>
+    <rect x="-62" y="-435" width="124" height="48" rx="20" fill="#A56B36"/>
+
+    <g fill="url(#petal)" stroke="#D9486F" stroke-width="6" stroke-linejoin="round">
+      <use xlink:href="#p" transform="rotate(36)"/>
+      <use xlink:href="#p" transform="rotate(108)"/>
+      <use xlink:href="#p" transform="rotate(180)"/>
+      <use xlink:href="#p" transform="rotate(252)"/>
+      <use xlink:href="#p" transform="rotate(324)"/>
+    </g>
+    <g fill="none" stroke="#D9486F" stroke-width="7" stroke-linecap="round" opacity="0.45">
+      <use xlink:href="#v" transform="rotate(36)"/>
+      <use xlink:href="#v" transform="rotate(108)"/>
+      <use xlink:href="#v" transform="rotate(180)"/>
+      <use xlink:href="#v" transform="rotate(252)"/>
+      <use xlink:href="#v" transform="rotate(324)"/>
+    </g>
+
+    <!-- Clock face: remaining-time wedge, stamen hour marks, hand. -->
+    <circle r="132" fill="#FFFDFB" stroke="#D9486F" stroke-width="8"/>
+    <path d="M0 0 L0 -96 A96 96 0 1 1 -83.1 48 Z" fill="#FFB7C5"/>
+    <g fill="#F2B63C">
+      <circle cx="0" cy="-114" r="10"/><circle cx="114" cy="0" r="10"/>
+      <circle cx="0" cy="114" r="10"/><circle cx="-114" cy="0" r="10"/>
+      <circle cx="57" cy="-98.7" r="6"/><circle cx="98.7" cy="-57" r="6"/>
+      <circle cx="98.7" cy="57" r="6"/><circle cx="57" cy="98.7" r="6"/>
+      <circle cx="-57" cy="98.7" r="6"/><circle cx="-98.7" cy="57" r="6"/>
+      <circle cx="-98.7" cy="-57" r="6"/><circle cx="-57" cy="-98.7" r="6"/>
+    </g>
+    <line x1="0" y1="0" x2="-76" y2="44" stroke="#8B5A2B" stroke-width="12" stroke-linecap="round"/>
+    <line x1="0" y1="0" x2="0" y2="-84" stroke="#8B5A2B" stroke-width="12" stroke-linecap="round"/>
+    <circle r="16" fill="#8B5A2B"/>
+    <circle r="6" fill="#F2B63C"/>
+  </g>
+</svg>

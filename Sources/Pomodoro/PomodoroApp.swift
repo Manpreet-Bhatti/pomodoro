@@ -38,7 +38,8 @@ import UserNotifications
         MenuBarExtra {
             MenuBarContent().environment(engine)
         } label: {
-            Text("🍅 " + clock(engine.remaining))
+            Image(nsImage: .sakuraTimer)
+            Text(clock(engine.remaining))
         }
 
         Settings {
@@ -48,7 +49,6 @@ import UserNotifications
 
     private static func notify(_ finished: Phase) {
         NSSound(named: "Glass")?.play()
-        // ponytail: notifications need a bundle; `swift run` gets the sound only, bundle.sh gets both.
         guard Bundle.main.bundleIdentifier != nil else { return }
         let content = UNMutableNotificationContent()
         content.title = "\(finished.label) done"
