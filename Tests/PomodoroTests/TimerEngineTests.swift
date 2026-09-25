@@ -1,17 +1,23 @@
 import Foundation
 import SwiftData
 import Testing
+
 @testable import Pomodoro
 
 @MainActor final class Harness {
     var now = Date(timeIntervalSince1970: 0)
-    let container = try! ModelContainer(for: TaskItem.self, Session.self,
-                                        configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-    lazy var engine = TimerEngine(context: container.mainContext,
-                                  defaults: UserDefaults(suiteName: UUID().uuidString)!,
-                                  clock: { [unowned self] in self.now })
+    let container = try! ModelContainer(
+        for: TaskItem.self, Session.self,
+        configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+    lazy var engine = TimerEngine(
+        context: container.mainContext,
+        defaults: UserDefaults(suiteName: UUID().uuidString)!,
+        clock: { [unowned self] in self.now })
 
-    func run(_ seconds: TimeInterval) { now += seconds; engine.tick() }
+    func run(_ seconds: TimeInterval) {
+        now += seconds
+        engine.tick()
+    }
     var sessions: [Session] { try! container.mainContext.fetch(FetchDescriptor<Session>()) }
 }
 
@@ -23,7 +29,11 @@ import Testing
         seen.append(h.engine.phase)
         h.run(h.engine.remaining)
     }
-    #expect(seen == [.focus, .shortBreak, .focus, .shortBreak, .focus, .shortBreak, .focus, .longBreak, .focus])
+    #expect(
+        seen == [
+            .focus, .shortBreak, .focus, .shortBreak, .focus, .shortBreak, .focus, .longBreak,
+            .focus,
+        ])
     #expect(h.sessions.count == 9)
     #expect(h.sessions.allSatisfy { $0.completed })
     #expect(minutes(h.sessions.filter { $0.kind == .focus }) == 5 * 25)
@@ -57,11 +67,11 @@ import Testing
 @MainActor @Test func backRestartsThenGoesPrevious() {
     let h = Harness()
     h.engine.start()
-    h.engine.forward() // -> short break
+    h.engine.forward()  // -> short break
     h.run(30)
-    h.engine.back() // >5s in: restart break
+    h.engine.back()  // >5s in: restart break
     #expect(h.engine.phase == .shortBreak && h.engine.remaining == 5 * 60)
-    h.engine.back() // fresh: previous phase
+    h.engine.back()  // fresh: previous phase
     #expect(h.engine.phase == .focus && h.engine.focusCount == 0)
 }
 

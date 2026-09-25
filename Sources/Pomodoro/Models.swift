@@ -47,8 +47,10 @@ enum Phase: String, Codable {
 
     var kind: Phase { Phase(rawValue: kindRaw) ?? .focus }
 
-    init(title: String, kind: Phase, startedAt: Date, endedAt: Date,
-         plannedSeconds: Int, elapsedSeconds: Int, completed: Bool, task: TaskItem?) {
+    init(
+        title: String, kind: Phase, startedAt: Date, endedAt: Date,
+        plannedSeconds: Int, elapsedSeconds: Int, completed: Bool, task: TaskItem?
+    ) {
         self.title = title
         self.kindRaw = kind.rawValue
         self.startedAt = startedAt
