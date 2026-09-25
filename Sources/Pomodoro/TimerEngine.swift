@@ -29,11 +29,16 @@ enum Key {
     private let defaults: UserDefaults
     private let clock: () -> Date
 
-    init(context: ModelContext, defaults: UserDefaults = .standard, clock: @escaping () -> Date = { .now }) {
+    init(
+        context: ModelContext, defaults: UserDefaults = .standard,
+        clock: @escaping () -> Date = { .now }
+    ) {
         self.context = context
         self.defaults = defaults
         self.clock = clock
-        defaults.register(defaults: [Key.focus: 25, Key.short: 5, Key.long: 15, Key.longEvery: 4, Key.autoStart: true])
+        defaults.register(defaults: [
+            Key.focus: 25, Key.short: 5, Key.long: 15, Key.longEvery: 4, Key.autoStart: true,
+        ])
         reset()
     }
 
@@ -67,7 +72,10 @@ enum Key {
         self.task = task
         title = task.title
         guard status == .idle else { return }
-        if phase != .focus { phase = .focus; reset() }
+        if phase != .focus {
+            phase = .focus
+            reset()
+        }
         start()
     }
 
@@ -137,8 +145,15 @@ enum Key {
     }
 
     private func reset() {
-        let key = switch phase { case .focus: Key.focus; case .shortBreak: Key.short; case .longBreak: Key.long }
-        duration = TimeInterval((phase.isBreak ? breakOverride : nil) ?? defaults.integer(forKey: key)) * 60
+        let key =
+            switch phase {
+            case .focus: Key.focus
+            case .shortBreak: Key.short
+            case .longBreak: Key.long
+            }
+        duration =
+            TimeInterval((phase.isBreak ? breakOverride : nil) ?? defaults.integer(forKey: key))
+            * 60
         remaining = duration
         endDate = status == .running ? clock() + duration : nil
         startedAt = status == .running ? clock() : nil
@@ -147,11 +162,13 @@ enum Key {
 
     private func log(completed: Bool) {
         guard let startedAt, elapsed >= 1 else { return }
-        context.insert(Session(
-            title: phase == .focus ? (title.isEmpty ? (task?.title ?? "Focus") : title) : phase.label,
-            kind: phase, startedAt: startedAt, endedAt: clock(),
-            plannedSeconds: Int(duration), elapsedSeconds: Int(elapsed.rounded()),
-            completed: completed, task: phase == .focus ? task : nil))
+        context.insert(
+            Session(
+                title: phase == .focus
+                    ? (title.isEmpty ? (task?.title ?? "Focus") : title) : phase.label,
+                kind: phase, startedAt: startedAt, endedAt: clock(),
+                plannedSeconds: Int(duration), elapsedSeconds: Int(elapsed.rounded()),
+                completed: completed, task: phase == .focus ? task : nil))
         try? context.save()
     }
 }

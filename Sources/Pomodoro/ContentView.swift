@@ -34,6 +34,7 @@ struct TaskRow: View {
     @Bindable var task: TaskItem
     @Environment(\.modelContext) private var context
     @Environment(TimerEngine.self) private var engine
+    @State private var hovering = false
 
     var body: some View {
         let focus = task.sessions.filter { $0.kind == .focus }
@@ -45,16 +46,23 @@ struct TaskRow: View {
                 Text("\(focus.filter(\.completed).count) 🍅 · \(minutes(focus))m")
                     .font(.caption).foregroundStyle(.secondary).monospacedDigit()
             }
-        }
-        .contextMenu {
-            Button("Start Pomodoro") { engine.start(task: task) }
-            Button("Add Subtask") {
-                context.insert(
-                    TaskItem(title: "New Subtask", parent: task, order: task.children.count))
+            Menu {
+                Button("Start Pomodoro") { engine.start(task: task) }
+                Button("Add Subtask") {
+                    context.insert(
+                        TaskItem(title: "New Subtask", parent: task, order: task.children.count))
+                }
+                Divider()
+                Button("Delete", role: .destructive) { context.delete(task) }
+            } label: {
+                Image(systemName: "ellipsis.circle")
             }
-            Divider()
-            Button("Delete", role: .destructive) { context.delete(task) }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .opacity(hovering ? 1 : 0)
         }
+        .onHover { hovering = $0 }
     }
 }
 
