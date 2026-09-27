@@ -61,6 +61,7 @@ import UserNotifications
 struct MenuBarContent: View {
     @Environment(TimerEngine.self) private var engine
     @AppStorage(Key.short) private var shortBreak = 5
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         let breakLength = Binding(
@@ -104,7 +105,13 @@ struct MenuBarContent: View {
             HStack {
                 Button("Quit Pomodoro") { NSApp.terminate(nil) }
                 Spacer()
-                SettingsLink { Image(systemName: "gearshape.fill").font(.title2) }
+                Button {
+                    NSApp.activate()
+                    openSettings()
+                } label: {
+                    Image(systemName: "gearshape.fill").font(.title2)
+                }
+                .accessibilityLabel("Settings")
             }
             .buttonStyle(.plain).font(.headline).foregroundStyle(.secondary)
             .padding(.horizontal, 4)
