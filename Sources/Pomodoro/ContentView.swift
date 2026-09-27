@@ -80,10 +80,19 @@ struct TimerPane: View {
             Text(clock(engine.remaining))
                 .font(.system(size: 80, weight: .light, design: .rounded)).monospacedDigit()
                 .foregroundStyle(engine.phase.isBreak ? Color.bark : Color.sakura)
-            Text(
-                "Pomodoro \(engine.focusCount + (engine.phase == .focus ? 1 : 0)) of \(engine.longEvery)"
-            )
-            .foregroundStyle(.secondary)
+            HStack(spacing: 6) {
+                let completed = engine.focusCount
+                let progress = engine.duration > 0 ? engine.elapsed / engine.duration : 0
+                ForEach(0..<engine.longEvery, id: \.self) { i in
+                    let fill = i < completed ? 1 : (i == completed && engine.phase == .focus ? progress : 0)
+                    Circle().fill(Color.secondary.opacity(0.25))
+                        .overlay(alignment: .leading) {
+                            Rectangle().fill(Color.sakura).frame(width: 8 * fill)
+                        }
+                        .clipShape(Circle())
+                        .frame(width: 8, height: 8)
+                }
+            }
 
             HStack(spacing: 24) {
                 Button("Back", systemImage: "backward.end.fill") { engine.back() }
