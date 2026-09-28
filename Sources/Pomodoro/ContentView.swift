@@ -17,19 +17,28 @@ struct ContentView: View {
         NavigationSplitView {
             List(roots, children: \.childList) { TaskRow(task: $0) }
                 .navigationTitle(engine.group)
-                .toolbar {
-                    Menu("Group", systemImage: "folder") {
-                        Picker("Group", selection: $engine.group) {
-                            ForEach(groups, id: \.self) { Text($0) }
+                .safeAreaInset(edge: .bottom) {
+                    HStack {
+                        Menu("Group", systemImage: "folder") {
+                            Picker("Group", selection: $engine.group) {
+                                ForEach(groups, id: \.self) { Text($0) }
+                            }
+                            .pickerStyle(.inline)
+                            Button("New Group…") { naming = true }
                         }
-                        .pickerStyle(.inline)
-                        Button("New Group…") { naming = true }
+                        .fixedSize()
+                        .disabled(engine.status != .idle)
+                        Spacer()
+                        Button("Add Task", systemImage: "plus") {
+                            context.insert(
+                                TaskItem(title: "New Task", order: roots.count, group: engine.group)
+                            )
+                        }
                     }
-                    .disabled(engine.status != .idle)
-                    Button("Add Task", systemImage: "plus") {
-                        context.insert(
-                            TaskItem(title: "New Task", order: roots.count, group: engine.group))
-                    }
+                    .labelStyle(.iconOnly)
+                    .menuStyle(.borderlessButton)
+                    .buttonStyle(.borderless)
+                    .padding(8)
                 }
                 .alert("New Group", isPresented: $naming) {
                     TextField("Name", text: $newGroup)
@@ -50,12 +59,12 @@ struct ContentView: View {
                 .navigationSplitViewColumnWidth(min: 260, ideal: 300)
         } detail: {
             TimerPane()
+                .frame(minWidth: 500, minHeight: 560)
                 .toolbar {
                     Button("Settings", systemImage: "gearshape") { showSettings.toggle() }
                         .popover(isPresented: $showSettings, arrowEdge: .bottom) { SettingsView() }
                 }
         }
-        .frame(minWidth: 760, minHeight: 560)
     }
 }
 
@@ -68,8 +77,23 @@ struct TaskRow: View {
     var body: some View {
         let focus = task.sessions.filter { $0.kind == .focus }
         HStack {
-            Toggle("Done", isOn: $task.isDone).labelsHidden()
-            TextField("Task", text: $task.title).strikethrough(task.isDone)
+            Button {
+                task.isDone.toggle()
+            } label: {
+                Image(systemName: task.isDone ? "checkmark.circle.fill" : "circle")
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(task.isDone ? Color.bark : .secondary, Color.sakura)
+                    .font(.title3)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Done")
+            .accessibilityAddTraits(task.isDone ? [.isToggle, .isSelected] : .isToggle)
+
+            if task.isDone {
+                Text(task.title).strikethrough().foregroundStyle(.secondary)
+            } else {
+                TextField("Task", text: $task.title)
+            }
             Spacer()
             if !focus.isEmpty {
                 Text("\(focus.filter(\.completed).count) 🍅 · \(minutes(focus))m")
