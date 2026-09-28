@@ -3,17 +3,41 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(\.modelContext) private var context
+    @Environment(TimerEngine.self) private var engine
     @Query(filter: #Predicate<TaskItem> { $0.parent == nil }, sort: \TaskItem.order) private
-        var roots: [TaskItem]
+        var allRoots: [TaskItem]
+    @State private var naming = false
+    @State private var newGroup = ""
 
     var body: some View {
+        @Bindable var engine = engine
+        let groups = Set(allRoots.map(\.group) + [engine.group]).sorted()
+        let roots = allRoots.filter { $0.group == engine.group }
         NavigationSplitView {
             List(roots, children: \.childList) { TaskRow(task: $0) }
-                .navigationTitle("Tasks")
+                .navigationTitle(engine.group)
                 .toolbar {
-                    Button("Add Task", systemImage: "plus") {
-                        context.insert(TaskItem(title: "New Task", order: roots.count))
+                    Menu("Group", systemImage: "folder") {
+                        Picker("Group", selection: $engine.group) {
+                            ForEach(groups, id: \.self) { Text($0) }
+                        }
+                        .pickerStyle(.inline)
+                        Button("New Group…") { naming = true }
                     }
+                    .disabled(engine.status != .idle)
+                    Button("Add Task", systemImage: "plus") {
+                        context.insert(
+                            TaskItem(title: "New Task", order: roots.count, group: engine.group))
+                    }
+                }
+                .alert("New Group", isPresented: $naming) {
+                    TextField("Name", text: $newGroup)
+                    Button("Create") {
+                        let name = newGroup.trimmingCharacters(in: .whitespaces)
+                        if !name.isEmpty { engine.group = name }
+                        newGroup = ""
+                    }
+                    Button("Cancel", role: .cancel) { newGroup = "" }
                 }
                 .overlay {
                     if roots.isEmpty {
@@ -69,10 +93,11 @@ struct TaskRow: View {
 struct TimerPane: View {
     @Environment(TimerEngine.self) private var engine
     @Query(sort: \TaskItem.title) private var tasks: [TaskItem]
-    @Query(sort: \Session.startedAt, order: .reverse) private var sessions: [Session]
+    @Query(sort: \Session.startedAt, order: .reverse) private var allSessions: [Session]
 
     var body: some View {
         @Bindable var engine = engine
+        let sessions = allSessions.filter { $0.group == engine.group }
         let today = sessions.filter { Calendar.current.isDateInToday($0.startedAt) }
         VStack(spacing: 16) {
             Text(engine.phase.label).font(.title2.bold()).foregroundStyle(
@@ -84,7 +109,9 @@ struct TimerPane: View {
                 let completed = engine.focusCount
                 let progress = engine.duration > 0 ? engine.elapsed / engine.duration : 0
                 ForEach(0..<engine.longEvery, id: \.self) { i in
-                    let fill = i < completed ? 1 : (i == completed && engine.phase == .focus ? progress : 0)
+                    let fill =
+                        i < completed
+                        ? 1 : (i == completed && engine.phase == .focus ? progress : 0)
                     Circle().fill(Color.secondary.opacity(0.25))
                         .overlay(alignment: .leading) {
                             Rectangle().fill(Color.sakura).frame(width: 8 * fill)
@@ -109,7 +136,9 @@ struct TimerPane: View {
                 TextField("Session title", text: $engine.title)
                 Picker("Task", selection: $engine.task) {
                     Text("None").tag(TaskItem?.none)
-                    ForEach(tasks.filter { !$0.isDone }) { Text($0.title).tag(Optional($0)) }
+                    ForEach(tasks.filter { !$0.isDone && $0.group == engine.group }) {
+                        Text($0.title).tag(Optional($0))
+                    }
                 }
                 if engine.phase.isBreak {
                     Stepper(

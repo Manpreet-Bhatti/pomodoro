@@ -5,6 +5,7 @@ import SwiftData
 enum Key {
     static let focus = "focusMin", short = "shortMin", long = "longMin"
     static let longEvery = "longEvery", autoStart = "autoStart"
+    static let group = "group"
 }
 
 @Observable @MainActor final class TimerEngine {
@@ -14,6 +15,13 @@ enum Key {
     var status: Status = .idle
     var title = ""
     var task: TaskItem?
+    /// Tasks and sessions are scoped to this group.
+    var group: String {
+        didSet {
+            defaults.set(group, forKey: Key.group)
+            if task?.group != group { task = nil }
+        }
+    }
     private(set) var remaining: TimeInterval = 0
     private(set) var duration: TimeInterval = 0
     /// Focus phases done since the last long break.
@@ -38,7 +46,9 @@ enum Key {
         self.clock = clock
         defaults.register(defaults: [
             Key.focus: 25, Key.short: 5, Key.long: 15, Key.longEvery: 4, Key.autoStart: true,
+            Key.group: "General",
         ])
+        group = defaults.string(forKey: Key.group) ?? "General"
         reset()
     }
 
@@ -168,7 +178,7 @@ enum Key {
                     ? (title.isEmpty ? (task?.title ?? "Focus") : title) : phase.label,
                 kind: phase, startedAt: startedAt, endedAt: clock(),
                 plannedSeconds: Int(duration), elapsedSeconds: Int(elapsed.rounded()),
-                completed: completed, task: phase == .focus ? task : nil))
+                completed: completed, task: phase == .focus ? task : nil, group: group))
         try? context.save()
     }
 }

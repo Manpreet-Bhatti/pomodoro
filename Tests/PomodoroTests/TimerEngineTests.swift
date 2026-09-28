@@ -85,3 +85,15 @@ import Testing
     #expect(h.engine.phase == .focus)
     #expect(h.sessions.contains { $0.kind == .shortBreak && $0.elapsedSeconds == 600 })
 }
+
+@MainActor @Test func groupScoping() {
+    let h = Harness()
+    let task = TaskItem(title: "Write", group: "General")
+    h.container.mainContext.insert(task)
+    h.engine.start(task: task)
+    h.run(h.engine.remaining)
+    #expect(h.sessions.first?.group == "General")
+    h.engine.group = "Work"
+    #expect(h.engine.task == nil)
+    #expect(TaskItem(title: "Sub", parent: task, group: "Work").group == "General")
+}

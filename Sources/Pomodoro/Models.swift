@@ -18,15 +18,17 @@ enum Phase: String, Codable {
     var title: String
     var isDone = false
     var order: Int
+    var group = "General"
     var createdAt = Date.now
     var parent: TaskItem?
     @Relationship(deleteRule: .cascade, inverse: \TaskItem.parent) var children: [TaskItem] = []
     @Relationship(deleteRule: .nullify, inverse: \Session.task) var sessions: [Session] = []
 
-    init(title: String, parent: TaskItem? = nil, order: Int = 0) {
+    init(title: String, parent: TaskItem? = nil, order: Int = 0, group: String = "General") {
         self.title = title
         self.parent = parent
         self.order = order
+        self.group = parent?.group ?? group
     }
 
     /// nil for leaves so `List(children:)` shows no disclosure arrow.
@@ -43,13 +45,15 @@ enum Phase: String, Codable {
     var plannedSeconds: Int
     var elapsedSeconds: Int
     var completed: Bool
+    var group = "General"
     var task: TaskItem?
 
     var kind: Phase { Phase(rawValue: kindRaw) ?? .focus }
 
     init(
         title: String, kind: Phase, startedAt: Date, endedAt: Date,
-        plannedSeconds: Int, elapsedSeconds: Int, completed: Bool, task: TaskItem?
+        plannedSeconds: Int, elapsedSeconds: Int, completed: Bool, task: TaskItem?,
+        group: String = "General"
     ) {
         self.title = title
         self.kindRaw = kind.rawValue
@@ -59,5 +63,6 @@ enum Phase: String, Codable {
         self.elapsedSeconds = elapsedSeconds
         self.completed = completed
         self.task = task
+        self.group = group
     }
 }
