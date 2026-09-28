@@ -8,6 +8,7 @@ struct ContentView: View {
         var allRoots: [TaskItem]
     @State private var naming = false
     @State private var newGroup = ""
+    @State private var showSettings = false
 
     var body: some View {
         @Bindable var engine = engine
@@ -49,6 +50,10 @@ struct ContentView: View {
                 .navigationSplitViewColumnWidth(min: 260, ideal: 300)
         } detail: {
             TimerPane()
+                .toolbar {
+                    Button("Settings", systemImage: "gearshape") { showSettings.toggle() }
+                        .popover(isPresented: $showSettings, arrowEdge: .bottom) { SettingsView() }
+                }
         }
         .frame(minWidth: 760, minHeight: 560)
     }
