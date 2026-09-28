@@ -18,27 +18,31 @@ struct ContentView: View {
             List(roots, children: \.childList) { TaskRow(task: $0) }
                 .navigationTitle(engine.group)
                 .safeAreaInset(edge: .bottom) {
-                    HStack {
-                        Menu("Group", systemImage: "folder") {
-                            Picker("Group", selection: $engine.group) {
-                                ForEach(groups, id: \.self) { Text($0) }
+                    GlassEffectContainer {
+                        HStack {
+                            Menu {
+                                Picker("Group", selection: $engine.group) {
+                                    ForEach(groups, id: \.self) { Text($0) }
+                                }
+                                .pickerStyle(.inline)
+                                Button("New Group…") { naming = true }
+                            } label: {
+                                GlassIcon(title: "Group", icon: "folder")
                             }
-                            .pickerStyle(.inline)
-                            Button("New Group…") { naming = true }
-                        }
-                        .fixedSize()
-                        .disabled(engine.status != .idle)
-                        Spacer()
-                        Button("Add Task", systemImage: "plus") {
-                            context.insert(
-                                TaskItem(title: "New Task", order: roots.count, group: engine.group)
-                            )
+                            .menuIndicator(.hidden)
+                            .disabled(engine.status != .idle)
+                            Spacer()
+                            Button {
+                                context.insert(
+                                    TaskItem(
+                                        title: "New Task", order: roots.count, group: engine.group))
+                            } label: {
+                                GlassIcon(title: "Add Task", icon: "plus")
+                            }
                         }
                     }
-                    .labelStyle(.iconOnly)
-                    .menuStyle(.borderlessButton)
-                    .buttonStyle(.borderless)
-                    .padding(8)
+                    .menuStyle(.button).buttonStyle(.plain)
+                    .padding(10)
                 }
                 .alert("New Group", isPresented: $naming) {
                     TextField("Name", text: $newGroup)
@@ -65,6 +69,24 @@ struct ContentView: View {
                         .popover(isPresented: $showSettings, arrowEdge: .bottom) { SettingsView() }
                 }
         }
+    }
+}
+
+private struct GlassIcon: View {
+    let title: String
+    let icon: String
+    @Environment(\.isEnabled) private var isEnabled
+    @State private var hovering = false
+
+    var body: some View {
+        Label(title, systemImage: icon).labelStyle(.iconOnly).font(.title3)
+            .frame(width: 36, height: 36).contentShape(.circle)
+            .glassEffect(
+                .regular.tint(hovering ? Color.primary.opacity(0.1) : nil).interactive(),
+                in: .circle
+            )
+            .animation(.snappy(duration: 0.15), value: hovering)
+            .onHover { hovering = $0 && isEnabled }
     }
 }
 
@@ -133,6 +155,7 @@ struct TimerPane: View {
                 engine.phase.isBreak ? Color.bark : Color.sakura)
             Text(clock(engine.remaining))
                 .font(.system(size: 80, weight: .light, design: .rounded)).monospacedDigit()
+                .contentTransition(.numericText())
                 .foregroundStyle(engine.phase.isBreak ? Color.bark : Color.sakura)
             HStack(spacing: 6) {
                 let completed = engine.focusCount
@@ -150,16 +173,22 @@ struct TimerPane: View {
                 }
             }
 
-            HStack(spacing: 24) {
-                Button("Back", systemImage: "backward.end.fill") { engine.back() }
-                Button(
-                    engine.status == .running ? "Pause" : "Start",
-                    systemImage: engine.status == .running ? "pause.fill" : "play.fill"
-                ) { engine.toggle() }
-                .keyboardShortcut(.defaultAction)
-                Button("Forward", systemImage: "forward.end.fill") { engine.forward() }
+            GlassEffectContainer(spacing: 16) {
+                HStack(spacing: 16) {
+                    Button("Back", systemImage: "backward.end.fill") { engine.back() }
+                        .buttonStyle(.glass)
+                    Button(
+                        engine.status == .running ? "Pause" : "Start",
+                        systemImage: engine.status == .running ? "pause.fill" : "play.fill"
+                    ) { engine.toggle() }
+                    .buttonStyle(.glassProminent).controlSize(.extraLarge)
+                    .keyboardShortcut(.defaultAction)
+                    Button("Forward", systemImage: "forward.end.fill") { engine.forward() }
+                        .buttonStyle(.glass)
+                }
             }
-            .labelStyle(.iconOnly).font(.title).buttonStyle(.borderless).tint(.sakura)
+            .labelStyle(.iconOnly).font(.title2).buttonBorderShape(.circle)
+            .controlSize(.large).tint(.sakura)
 
             Form {
                 TextField("Session title", text: $engine.title)
@@ -185,6 +214,8 @@ struct TimerPane: View {
                     "Sessions today", "\(today.filter { $0.kind == .focus && $0.completed }.count)")
                 stat("All time", "\(sessions.filter { $0.kind == .focus && $0.completed }.count)")
             }
+            .padding(.horizontal, 24).padding(.vertical, 12)
+            .card()
 
             List(sessions.prefix(50)) { s in
                 HStack {
@@ -200,6 +231,7 @@ struct TimerPane: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            .scrollContentBackground(.hidden)
         }
         .padding()
     }

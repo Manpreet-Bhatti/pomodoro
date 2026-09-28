@@ -9,44 +9,30 @@ struct SettingsView: View {
     @AppStorage(Key.autoStart) private var autoStart = true
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            GroupBox("Time") {
-                Grid(alignment: .leading, verticalSpacing: 8) {
-                    GridRow {
-                        Text("Focus:")
-                        minutePicker($focus, 1...120)
-                    }
-                    GridRow {
-                        Text("Short break:")
-                        minutePicker($short, 1...60)
-                    }
-                    GridRow {
-                        Text("Long break:")
-                        minutePicker($long, 1...60)
-                        Picker("Long break every", selection: $longEvery) {
-                            ForEach(2...10, id: \.self) { Text("after \($0)") }
-                        }
-                        .labelsHidden().fixedSize()
-                    }
+        Form {
+            Section("Time") {
+                minutePicker("Focus", $focus, 1...120)
+                minutePicker("Short break", $short, 1...60)
+                minutePicker("Long break", $long, 1...60)
+                Picker("Long break every", selection: $longEvery) {
+                    ForEach(2...10, id: \.self) { Text("\($0) sessions") }
                 }
-                .padding(6)
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            GroupBox("Flow") {
+            Section("Flow") {
                 Toggle("Auto-start next phase", isOn: $autoStart)
-                    .padding(6)
-                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .padding()
+        .formStyle(.grouped)
+        .fixedSize(horizontal: false, vertical: true)
         .frame(width: 360)
         .onChange(of: [focus, short, long]) { engine.reloadIfIdle() }
     }
 
-    private func minutePicker(_ value: Binding<Int>, _ range: ClosedRange<Int>) -> some View {
-        Picker("Minutes", selection: value) {
+    private func minutePicker(_ label: String, _ value: Binding<Int>, _ range: ClosedRange<Int>)
+        -> some View
+    {
+        Picker(label, selection: value) {
             ForEach(range, id: \.self) { Text("\($0) min") }
         }
-        .labelsHidden().fixedSize()
     }
 }

@@ -64,101 +64,70 @@ struct MenuBarContent: View {
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
-        let breakLength = Binding(
-            get: { engine.phase.isBreak ? engine.breakMinutes : shortBreak },
-            set: { if engine.phase.isBreak { engine.setBreakMinutes($0) } else { shortBreak = $0 } }
+        let breakLength = Binding<Double>(
+            get: { Double(engine.phase.isBreak ? engine.breakMinutes : shortBreak) },
+            set: {
+                let m = Int($0.rounded())
+                if engine.phase.isBreak { engine.setBreakMinutes(m) } else { shortBreak = m }
+            }
         )
-        VStack(spacing: 12) {
-            HStack(spacing: 12) {
-                Text(clock(engine.remaining))
-                    .font(.system(size: 40, design: .monospaced)).monospacedDigit()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .card()
+        GlassEffectContainer(spacing: 12) {
+            VStack(spacing: 12) {
+                HStack(spacing: 12) {
+                    Text(clock(engine.remaining))
+                        .font(.system(size: 40, design: .rounded)).monospacedDigit()
+                        .contentTransition(.numericText())
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .card()
 
-                let running = engine.status == .running
-                Button(running ? "Stop" : "Start", systemImage: running ? "stop.fill" : "play.fill")
-                {
-                    engine.toggle()
+                    let running = engine.status == .running
+                    Button(
+                        running ? "Stop" : "Start", systemImage: running ? "stop.fill" : "play.fill"
+                    ) {
+                        engine.toggle()
+                    }
+                    .labelStyle(.iconOnly).font(.title)
+                    .buttonStyle(.glassProminent).buttonBorderShape(.circle)
+                    .controlSize(.extraLarge).tint(.sakura)
                 }
-                .labelStyle(.iconOnly).buttonStyle(.plain)
-                .font(.system(size: 24)).foregroundStyle(Color.sakura)
-                .frame(width: 56, height: 56)
-                .background(.background, in: Circle())
-                .shadow(color: .black.opacity(0.15), radius: 2, y: 1)
-                .frame(width: 76).frame(maxHeight: .infinity)
+                .frame(height: 90)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text("Break Mode")
+                        Spacer()
+                        Text("\(Int(breakLength.wrappedValue)) \(Text("MINS").font(.caption))")
+                    }
+                    .font(.headline)
+                    HStack {
+                        Image(systemName: "figure.mind.and.body").foregroundStyle(.secondary)
+                        Slider(value: breakLength, in: 1...60) { Text("Break length") }
+                            .labelsHidden().tint(.sakura)
+                    }
+                }
+                .padding(14)
                 .card()
-            }
-            .frame(height: 110)
 
-            VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("Break Mode")
+                    Button("Quit Pomodoro") { NSApp.terminate(nil) }
                     Spacer()
-                    Text("\(breakLength.wrappedValue) \(Text("MINS").font(.caption))")
+                    Button("Settings", systemImage: "gearshape.fill") {
+                        NSApp.activate()
+                        openSettings()
+                    }
+                    .labelStyle(.iconOnly).buttonBorderShape(.circle)
                 }
-                .font(.headline)
-                IconSlider(value: breakLength, range: 1...60, icon: "figure.mind.and.body")
+                .buttonStyle(.glass)
             }
-            .padding(14)
-            .card()
-
-            HStack {
-                Button("Quit Pomodoro") { NSApp.terminate(nil) }
-                Spacer()
-                Button {
-                    NSApp.activate()
-                    openSettings()
-                } label: {
-                    Image(systemName: "gearshape.fill").font(.title2)
-                }
-                .accessibilityLabel("Settings")
-            }
-            .buttonStyle(.plain).font(.headline).foregroundStyle(.secondary)
-            .padding(.horizontal, 4)
         }
         .padding(12)
         .frame(width: 300)
     }
 }
 
-/// Capsule slider whose thumb carries an icon.
-private struct IconSlider: View {
-    @Binding var value: Int
-    let range: ClosedRange<Int>
-    let icon: String
-
-    var body: some View {
-        GeometryReader { geo in
-            let knob: CGFloat = 30
-            let span = geo.size.width - knob
-            let steps = CGFloat(range.upperBound - range.lowerBound)
-            let x = span * CGFloat(value - range.lowerBound) / steps
-            ZStack(alignment: .leading) {
-                Capsule().fill(.quaternary)
-                Capsule().fill(Color.sakura.opacity(0.35)).frame(width: knob + x)
-                Image(systemName: icon).font(.caption).foregroundStyle(.secondary)
-                    .frame(width: knob - 4, height: knob - 4)
-                    .background(.background, in: Circle())
-                    .shadow(color: .black.opacity(0.15), radius: 1, y: 1)
-                    .padding(2)
-                    .offset(x: x)
-            }
-            .contentShape(Capsule())
-            .gesture(
-                DragGesture(minimumDistance: 0).onChanged { g in
-                    let f = min(max((g.location.x - knob / 2) / span, 0), 1)
-                    value = range.lowerBound + Int((f * steps).rounded())
-                })
-        }
-        .frame(height: 30)
-        .accessibilityRepresentation { Stepper("Break length", value: $value, in: range) }
-    }
-}
-
 extension View {
-    fileprivate func card() -> some View {
-        background(.background.opacity(0.5), in: RoundedRectangle(cornerRadius: 14))
-            .shadow(color: .black.opacity(0.08), radius: 3, y: 1)
+    func card() -> some View {
+        glassEffect(in: .rect(cornerRadius: 16))
     }
 }
 
