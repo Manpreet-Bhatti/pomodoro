@@ -20,7 +20,6 @@ struct ContentView: View {
     @State private var naming = false
     @State private var newGroup = ""
     @State private var columns = NavigationSplitViewVisibility.all
-    @State private var fade = 1.0
     @State private var sidebarInPlace = true
 
     var body: some View {
@@ -33,9 +32,8 @@ struct ContentView: View {
         NavigationSplitView(columnVisibility: $columns) {
             List(roots, children: \.childList) { TaskRow(task: $0) }
                 .navigationTitle(engine.group)
-                .toolbar(removing: .sidebarToggle)
                 .toolbar {
-                    if columns != .detailOnly && sidebarInPlace {
+                    if sidebarInPlace {
                         ToolbarItemGroup {
                             Menu("Group", systemImage: "folder") {
                                 Picker("Group", selection: $engine.group) {
@@ -46,9 +44,7 @@ struct ContentView: View {
                             }
                             .menuIndicator(.hidden)
                             .disabled(engine.status != .idle)
-                            .opacity(fade)
                             Button("Add Task", systemImage: "plus", action: addTask)
-                                .opacity(fade)
                         }
                     }
                 }
@@ -59,34 +55,15 @@ struct ContentView: View {
                             description: Text("Click + to add a task."))
                     }
                 }
-                .navigationSplitViewColumnWidth(min: 184, ideal: 184)
+                .navigationSplitViewColumnWidth(min: 240, ideal: 240)
                 .onGeometryChange(for: Bool.self) {
                     $0.frame(in: .global).minX >= 0
-                } action: {
-                    sidebarInPlace = $0 && columns != .detailOnly
-                }
-                .onChange(of: sidebarInPlace) { _, inPlace in
-                    fade = 0
-                    // ponytail: next tick so the 0 -> 1 change animates instead of coalescing
-                    if inPlace {
-                        DispatchQueue.main.async {
-                            withAnimation(.easeIn(duration: 0.3)) { fade = 1 }
-                        }
-                    }
+                } action: { inPlace in
+                    withAnimation { sidebarInPlace = inPlace && columns != .detailOnly }
                 }
         } detail: {
             TimerPane()
                 .frame(minWidth: 500, minHeight: 560)
-                .toolbar {
-                    ToolbarItem(placement: .navigation) {
-                        let hidden = columns == .detailOnly
-                        Button(
-                            hidden ? "Show Sidebar" : "Hide Sidebar", systemImage: "sidebar.leading"
-                        ) {
-                            withAnimation { columns = hidden ? .all : .detailOnly }
-                        }
-                    }
-                }
         }
         .alert("New Group", isPresented: $naming) {
             TextField("Name", text: $newGroup)
@@ -102,7 +79,7 @@ struct ContentView: View {
             TaskActions(
                 groups: groups,
                 newTask: {
-                    columns = .all
+                    withAnimation { columns = .all }
                     addTask()
                 },
                 newGroup: { naming = true }))
