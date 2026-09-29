@@ -1,6 +1,17 @@
 import SwiftData
 import SwiftUI
 
+/// Lets the File menu act on the focused window's task list.
+struct TaskActions {
+    let groups: [String]
+    let newTask: () -> Void
+    let newGroup: () -> Void
+}
+
+extension FocusedValues {
+    @Entry var taskActions: TaskActions?
+}
+
 struct ContentView: View {
     @Environment(\.modelContext) private var context
     @Environment(TimerEngine.self) private var engine
@@ -8,40 +19,38 @@ struct ContentView: View {
         var allRoots: [TaskItem]
     @State private var naming = false
     @State private var newGroup = ""
+    @State private var columns = NavigationSplitViewVisibility.all
+    @State private var fade = 1.0
+    @State private var sidebarInPlace = true
 
     var body: some View {
         @Bindable var engine = engine
         let groups = Set(allRoots.map(\.group) + [engine.group]).sorted()
         let roots = allRoots.filter { $0.group == engine.group }
-        NavigationSplitView {
+        let addTask = {
+            context.insert(TaskItem(title: "New Task", order: roots.count, group: engine.group))
+        }
+        NavigationSplitView(columnVisibility: $columns) {
             List(roots, children: \.childList) { TaskRow(task: $0) }
                 .navigationTitle(engine.group)
+                .toolbar(removing: .sidebarToggle)
                 .toolbar {
-                    ToolbarItem {
-                        Menu("Group", systemImage: "folder") {
-                            Picker("Group", selection: $engine.group) {
-                                ForEach(groups, id: \.self) { Text($0) }
+                    if columns != .detailOnly && sidebarInPlace {
+                        ToolbarItemGroup {
+                            Menu("Group", systemImage: "folder") {
+                                Picker("Group", selection: $engine.group) {
+                                    ForEach(groups, id: \.self) { Text($0) }
+                                }
+                                .pickerStyle(.inline)
+                                Button("New Group…") { naming = true }
                             }
-                            .pickerStyle(.inline)
-                            Button("New Group…") { naming = true }
-                        }
-                        .disabled(engine.status != .idle)
-                    }
-                    ToolbarItem {
-                        Button("Add Task", systemImage: "plus") {
-                            context.insert(
-                                TaskItem(title: "New Task", order: roots.count, group: engine.group))
+                            .menuIndicator(.hidden)
+                            .disabled(engine.status != .idle)
+                            .opacity(fade)
+                            Button("Add Task", systemImage: "plus", action: addTask)
+                                .opacity(fade)
                         }
                     }
-                }
-                .alert("New Group", isPresented: $naming) {
-                    TextField("Name", text: $newGroup)
-                    Button("Create") {
-                        let name = newGroup.trimmingCharacters(in: .whitespaces)
-                        if !name.isEmpty { engine.group = name }
-                        newGroup = ""
-                    }
-                    Button("Cancel", role: .cancel) { newGroup = "" }
                 }
                 .overlay {
                     if roots.isEmpty {
@@ -50,11 +59,53 @@ struct ContentView: View {
                             description: Text("Click + to add a task."))
                     }
                 }
-                .navigationSplitViewColumnWidth(min: 260, ideal: 300)
+                .navigationSplitViewColumnWidth(min: 184, ideal: 184)
+                .onGeometryChange(for: Bool.self) {
+                    $0.frame(in: .global).minX >= 0
+                } action: {
+                    sidebarInPlace = $0 && columns != .detailOnly
+                }
+                .onChange(of: sidebarInPlace) { _, inPlace in
+                    fade = 0
+                    // ponytail: next tick so the 0 -> 1 change animates instead of coalescing
+                    if inPlace {
+                        DispatchQueue.main.async {
+                            withAnimation(.easeIn(duration: 0.3)) { fade = 1 }
+                        }
+                    }
+                }
         } detail: {
             TimerPane()
                 .frame(minWidth: 500, minHeight: 560)
+                .toolbar {
+                    ToolbarItem(placement: .navigation) {
+                        let hidden = columns == .detailOnly
+                        Button(
+                            hidden ? "Show Sidebar" : "Hide Sidebar", systemImage: "sidebar.leading"
+                        ) {
+                            withAnimation { columns = hidden ? .all : .detailOnly }
+                        }
+                    }
+                }
         }
+        .alert("New Group", isPresented: $naming) {
+            TextField("Name", text: $newGroup)
+            Button("Create") {
+                let name = newGroup.trimmingCharacters(in: .whitespaces)
+                if !name.isEmpty { engine.group = name }
+                newGroup = ""
+            }
+            Button("Cancel", role: .cancel) { newGroup = "" }
+        }
+        .focusedSceneValue(
+            \.taskActions,
+            TaskActions(
+                groups: groups,
+                newTask: {
+                    columns = .all
+                    addTask()
+                },
+                newGroup: { naming = true }))
     }
 }
 
@@ -180,7 +231,8 @@ struct TimerPane: View {
                         "Sessions today",
                         "\(today.filter { $0.kind == .focus && $0.completed }.count)")
                     stat(
-                        "All time", "\(sessions.filter { $0.kind == .focus && $0.completed }.count)")
+                        "All time", "\(sessions.filter { $0.kind == .focus && $0.completed }.count)"
+                    )
                 }
                 .padding(.horizontal, 24).padding(.vertical, 12)
             }

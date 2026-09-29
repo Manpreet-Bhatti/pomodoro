@@ -28,6 +28,7 @@ import UserNotifications
         .environment(engine)
         .modelContainer(container)
         .commands {
+            TaskCommands(engine: engine)
             CommandMenu("Timer") {
                 Button(engine.status == .running ? "Pause" : "Start") { engine.toggle() }
                     .keyboardShortcut("p")
@@ -56,6 +57,28 @@ import UserNotifications
         content.body = finished.isBreak ? "Back to focus." : "Take a break."
         UNUserNotificationCenter.current().add(
             UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
+    }
+}
+
+struct TaskCommands: Commands {
+    let engine: TimerEngine
+    @FocusedValue(\.taskActions) private var actions
+
+    var body: some Commands {
+        @Bindable var engine = engine
+        CommandGroup(replacing: .newItem) {
+            Button("New Task") { actions?.newTask() }
+                .keyboardShortcut("n")
+                .disabled(actions == nil)
+            Menu("Group") {
+                Picker("Group", selection: $engine.group) {
+                    ForEach(actions?.groups ?? [], id: \.self) { Text($0) }
+                }
+                .pickerStyle(.inline)
+                Button("New Group…") { actions?.newGroup() }
+            }
+            .disabled(actions == nil || engine.status != .idle)
+        }
     }
 }
 
