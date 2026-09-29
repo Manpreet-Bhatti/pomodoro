@@ -5,7 +5,7 @@ import SwiftData
 enum Key {
     static let focus = "focusMin", short = "shortMin", long = "longMin"
     static let longEvery = "longEvery", autoStart = "autoStart"
-    static let group = "group"
+    static let group = "group", menuBar = "menuBar"
 }
 
 @Observable @MainActor final class TimerEngine {

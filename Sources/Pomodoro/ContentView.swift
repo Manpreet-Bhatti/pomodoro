@@ -8,7 +8,6 @@ struct ContentView: View {
         var allRoots: [TaskItem]
     @State private var naming = false
     @State private var newGroup = ""
-    @State private var showSettings = false
 
     var body: some View {
         @Bindable var engine = engine
@@ -17,32 +16,23 @@ struct ContentView: View {
         NavigationSplitView {
             List(roots, children: \.childList) { TaskRow(task: $0) }
                 .navigationTitle(engine.group)
-                .safeAreaInset(edge: .bottom) {
-                    GlassEffectContainer {
-                        HStack {
-                            Menu {
-                                Picker("Group", selection: $engine.group) {
-                                    ForEach(groups, id: \.self) { Text($0) }
-                                }
-                                .pickerStyle(.inline)
-                                Button("New Group…") { naming = true }
-                            } label: {
-                                GlassIcon(title: "Group", icon: "folder")
+                .toolbar {
+                    ToolbarItem {
+                        Menu("Group", systemImage: "folder") {
+                            Picker("Group", selection: $engine.group) {
+                                ForEach(groups, id: \.self) { Text($0) }
                             }
-                            .menuIndicator(.hidden)
-                            .disabled(engine.status != .idle)
-                            Spacer()
-                            Button {
-                                context.insert(
-                                    TaskItem(
-                                        title: "New Task", order: roots.count, group: engine.group))
-                            } label: {
-                                GlassIcon(title: "Add Task", icon: "plus")
-                            }
+                            .pickerStyle(.inline)
+                            Button("New Group…") { naming = true }
+                        }
+                        .disabled(engine.status != .idle)
+                    }
+                    ToolbarItem {
+                        Button("Add Task", systemImage: "plus") {
+                            context.insert(
+                                TaskItem(title: "New Task", order: roots.count, group: engine.group))
                         }
                     }
-                    .menuStyle(.button).buttonStyle(.plain)
-                    .padding(10)
                 }
                 .alert("New Group", isPresented: $naming) {
                     TextField("Name", text: $newGroup)
@@ -56,37 +46,15 @@ struct ContentView: View {
                 .overlay {
                     if roots.isEmpty {
                         ContentUnavailableView(
-                            "No tasks", systemImage: "checklist",
-                            description: Text("Add one with +"))
+                            "No Tasks", systemImage: "checklist",
+                            description: Text("Click + to add a task."))
                     }
                 }
                 .navigationSplitViewColumnWidth(min: 260, ideal: 300)
         } detail: {
             TimerPane()
                 .frame(minWidth: 500, minHeight: 560)
-                .toolbar {
-                    Button("Settings", systemImage: "gearshape") { showSettings.toggle() }
-                        .popover(isPresented: $showSettings, arrowEdge: .bottom) { SettingsView() }
-                }
         }
-    }
-}
-
-private struct GlassIcon: View {
-    let title: String
-    let icon: String
-    @Environment(\.isEnabled) private var isEnabled
-    @State private var hovering = false
-
-    var body: some View {
-        Label(title, systemImage: icon).labelStyle(.iconOnly).font(.title3)
-            .frame(width: 36, height: 36).contentShape(.circle)
-            .glassEffect(
-                .regular.tint(hovering ? Color.primary.opacity(0.1) : nil).interactive(),
-                in: .circle
-            )
-            .animation(.snappy(duration: 0.15), value: hovering)
-            .onHover { hovering = $0 && isEnabled }
     }
 }
 
@@ -94,7 +62,6 @@ struct TaskRow: View {
     @Bindable var task: TaskItem
     @Environment(\.modelContext) private var context
     @Environment(TimerEngine.self) private var engine
-    @State private var hovering = false
 
     var body: some View {
         let focus = task.sessions.filter { $0.kind == .focus }
@@ -118,26 +85,21 @@ struct TaskRow: View {
             }
             Spacer()
             if !focus.isEmpty {
-                Text("\(focus.filter(\.completed).count) 🍅 · \(minutes(focus))m")
+                let done = focus.filter(\.completed).count
+                Text("\(done) 🍅 · \(minutes(focus))m")
                     .font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                    .accessibilityLabel("\(done) pomodoros, \(minutes(focus)) minutes")
             }
-            Menu {
-                Button("Start Pomodoro") { engine.start(task: task) }
-                Button("Add Subtask") {
-                    context.insert(
-                        TaskItem(title: "New Subtask", parent: task, order: task.children.count))
-                }
-                Divider()
-                Button("Delete", role: .destructive) { context.delete(task) }
-            } label: {
-                Image(systemName: "ellipsis.circle")
-            }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .fixedSize()
-            .opacity(hovering ? 1 : 0)
         }
-        .onHover { hovering = $0 }
+        .contextMenu {
+            Button("Start Pomodoro") { engine.start(task: task) }
+            Button("Add Subtask") {
+                context.insert(
+                    TaskItem(title: "New Subtask", parent: task, order: task.children.count))
+            }
+            Divider()
+            Button("Delete", role: .destructive) { context.delete(task) }
+        }
     }
 }
 
@@ -172,6 +134,9 @@ struct TimerPane: View {
                         .frame(width: 8, height: 8)
                 }
             }
+            .accessibilityElement()
+            .accessibilityLabel(
+                "\(engine.focusCount) of \(engine.longEvery) sessions before long break")
 
             GlassEffectContainer(spacing: 16) {
                 HStack(spacing: 16) {
@@ -207,15 +172,19 @@ struct TimerPane: View {
             }
             .formStyle(.grouped).frame(maxWidth: 420).fixedSize(horizontal: false, vertical: true)
 
-            HStack(spacing: 32) {
-                stat("Focus today", "\(minutes(today.filter { $0.kind == .focus }))m")
-                stat("Breaks today", "\(minutes(today.filter { $0.kind.isBreak }))m")
-                stat(
-                    "Sessions today", "\(today.filter { $0.kind == .focus && $0.completed }.count)")
-                stat("All time", "\(sessions.filter { $0.kind == .focus && $0.completed }.count)")
+            GroupBox {
+                HStack(spacing: 32) {
+                    stat("Focus today", "\(minutes(today.filter { $0.kind == .focus }))m")
+                    stat("Breaks today", "\(minutes(today.filter { $0.kind.isBreak }))m")
+                    stat(
+                        "Sessions today",
+                        "\(today.filter { $0.kind == .focus && $0.completed }.count)")
+                    stat(
+                        "All time", "\(sessions.filter { $0.kind == .focus && $0.completed }.count)")
+                }
+                .padding(.horizontal, 24).padding(.vertical, 12)
             }
-            .padding(.horizontal, 24).padding(.vertical, 12)
-            .card()
+            .fixedSize()
 
             List(sessions.prefix(50)) { s in
                 HStack {
@@ -241,6 +210,7 @@ struct TimerPane: View {
             Text(value).font(.title2.bold()).monospacedDigit().foregroundStyle(Color.bark)
             Text(label).font(.caption).foregroundStyle(.secondary)
         }
+        .accessibilityElement(children: .combine)
     }
 }
 

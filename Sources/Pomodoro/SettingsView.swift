@@ -7,6 +7,7 @@ struct SettingsView: View {
     @AppStorage(Key.long) private var long = 15
     @AppStorage(Key.longEvery) private var longEvery = 4
     @AppStorage(Key.autoStart) private var autoStart = true
+    @AppStorage(Key.menuBar) private var menuBar = true
 
     var body: some View {
         Form {
@@ -18,8 +19,9 @@ struct SettingsView: View {
                     ForEach(2...10, id: \.self) { Text("\($0) sessions") }
                 }
             }
-            Section("Flow") {
+            Section("General") {
                 Toggle("Auto-start next phase", isOn: $autoStart)
+                Toggle("Show in menu bar", isOn: $menuBar)
             }
         }
         .formStyle(.grouped)

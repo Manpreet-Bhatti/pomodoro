@@ -6,6 +6,7 @@ import UserNotifications
 @main struct PomodoroApp: App {
     let container: ModelContainer
     @State private var engine: TimerEngine
+    @AppStorage(Key.menuBar) private var showMenuBar = true
 
     init() {
         container = try! ModelContainer(for: TaskItem.self, Session.self)
@@ -35,12 +36,12 @@ import UserNotifications
             }
         }
 
-        MenuBarExtra {
+        MenuBarExtra(isInserted: $showMenuBar) {
             MenuBarContent().environment(engine)
         } label: {
             Image(nsImage: .sakuraTimer)
         }
-        .menuBarExtraStyle(.window)
+        .menuBarExtraStyle(.menu)
 
         Settings {
             SettingsView().environment(engine).tint(.sakura)
@@ -51,7 +52,7 @@ import UserNotifications
         NSSound(named: "Glass")?.play()
         guard Bundle.main.bundleIdentifier != nil else { return }
         let content = UNMutableNotificationContent()
-        content.title = "\(finished.label) done"
+        content.title = "\(finished.label) Done"
         content.body = finished.isBreak ? "Back to focus." : "Take a break."
         UNUserNotificationCenter.current().add(
             UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
@@ -60,74 +61,19 @@ import UserNotifications
 
 struct MenuBarContent: View {
     @Environment(TimerEngine.self) private var engine
-    @AppStorage(Key.short) private var shortBreak = 5
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
-        let breakLength = Binding<Double>(
-            get: { Double(engine.phase.isBreak ? engine.breakMinutes : shortBreak) },
-            set: {
-                let m = Int($0.rounded())
-                if engine.phase.isBreak { engine.setBreakMinutes(m) } else { shortBreak = m }
-            }
-        )
-        GlassEffectContainer(spacing: 12) {
-            VStack(spacing: 12) {
-                HStack(spacing: 12) {
-                    Text(clock(engine.remaining))
-                        .font(.system(size: 40, design: .rounded)).monospacedDigit()
-                        .contentTransition(.numericText())
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .card()
-
-                    let running = engine.status == .running
-                    Button(
-                        running ? "Stop" : "Start", systemImage: running ? "stop.fill" : "play.fill"
-                    ) {
-                        engine.toggle()
-                    }
-                    .labelStyle(.iconOnly).font(.title)
-                    .buttonStyle(.glassProminent).buttonBorderShape(.circle)
-                    .controlSize(.extraLarge).tint(.sakura)
-                }
-                .frame(height: 90)
-
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text("Break Mode")
-                        Spacer()
-                        Text("\(Int(breakLength.wrappedValue)) \(Text("MINS").font(.caption))")
-                    }
-                    .font(.headline)
-                    HStack {
-                        Image(systemName: "figure.mind.and.body").foregroundStyle(.secondary)
-                        Slider(value: breakLength, in: 1...60) { Text("Break length") }
-                            .labelsHidden().tint(.sakura)
-                    }
-                }
-                .padding(14)
-                .card()
-
-                HStack {
-                    Button("Quit Pomodoro") { NSApp.terminate(nil) }
-                    Spacer()
-                    Button("Settings", systemImage: "gearshape.fill") {
-                        NSApp.activate()
-                        openSettings()
-                    }
-                    .labelStyle(.iconOnly).buttonBorderShape(.circle)
-                }
-                .buttonStyle(.glass)
-            }
+        Text("\(engine.phase.label) · \(clock(engine.remaining))")
+        Button(engine.status == .running ? "Pause" : "Start") { engine.toggle() }
+        Button("Skip") { engine.forward() }
+        Divider()
+        Button("Settings…") {
+            NSApp.activate()
+            openSettings()
         }
-        .padding(12)
-        .frame(width: 300)
-    }
-}
-
-extension View {
-    func card() -> some View {
-        glassEffect(in: .rect(cornerRadius: 16))
+        .keyboardShortcut(",")
+        Button("Quit Pomodoro") { NSApp.terminate(nil) }.keyboardShortcut("q")
     }
 }
 
