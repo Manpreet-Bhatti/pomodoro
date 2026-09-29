@@ -64,19 +64,3 @@ swift test
 ```
 
 The tests use Swift Testing and live in `Tests/PomodoroTests/TimerEngineTests.swift`. They drive `TimerEngine` with an injected clock, an in-memory SwiftData store, and a throwaway `UserDefaults` suite, so they finish instantly and never touch your real data or settings. They cover the phase sequence, pausing, skipping and logging partial sessions, restart/back, overriding a break's length, and scoping tasks to groups.
-
-## Project layout
-
-```
-Sources/Pomodoro/
-  PomodoroApp.swift   App entry, scenes, menu commands, menu bar extra, notifications
-  TimerEngine.swift   Timer state machine and session logging
-  Models.swift        SwiftData models: TaskItem, Session; Phase enum
-  ContentView.swift   Main window: task sidebar, timer, session history
-  SettingsView.swift  Preferences
-  MenuBarIcon.swift   Menu bar icon drawing
-  Theme.swift         Colors
-Tests/PomodoroTests/  TimerEngine tests
-Assets/               App icon SVG and .icns generator
-bundle.sh             Builds build/Pomodoro.app
-```
