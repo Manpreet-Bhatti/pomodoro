@@ -9,7 +9,12 @@ import UserNotifications
     @AppStorage(Key.menuBar) private var showMenuBar = true
 
     init() {
-        container = try! ModelContainer(for: TaskItem.self, Session.self)
+        // Own file: the default store is shared by every unsandboxed SwiftData app.
+        let dir = URL.applicationSupportDirectory.appending(path: "Pomodoro")
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        container = try! ModelContainer(
+            for: TaskItem.self, Session.self,
+            configurations: ModelConfiguration(url: dir.appending(path: "Pomodoro.store")))
         let engine = TimerEngine(context: container.mainContext)
         engine.onFinish = Self.notify
         _engine = State(initialValue: engine)

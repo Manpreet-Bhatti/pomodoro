@@ -215,21 +215,7 @@ struct TimerPane: View {
             }
             .fixedSize()
 
-            List(sessions.prefix(50)) { s in
-                HStack {
-                    Image(systemName: s.kind == .focus ? "brain.head.profile" : "cup.and.saucer")
-                    Text(s.title)
-                    if let t = s.task, t.title != s.title {
-                        Text(t.title).foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Text("\(s.elapsedSeconds / 60)m\(s.completed ? "" : " (skipped)")")
-                        .monospacedDigit()
-                    Text(s.startedAt, format: .dateTime.month().day().hour().minute())
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .scrollContentBackground(.hidden)
+            SessionLog(sessions: sessions)
         }
         .padding()
     }

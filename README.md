@@ -7,6 +7,7 @@ A native macOS Pomodoro timer built with SwiftUI and SwiftData. It alternates be
 - **Focus / short break / long break cycle.** A long break comes after every N focus sessions (4 by default).
 - **Tasks and subtasks**, grouped into named groups (for example "Work" or "Personal"). Start a pomodoro straight from a task. Each task shows how many pomodoros and focus minutes it has used.
 - **Session history.** Each phase is saved, including partial ones when you skip ahead, which are marked "skipped".
+- **Session log.** Sessions are grouped by month. Each day shows 24 hour bars that get brighter the more you focused in that hour. Expand a day to see its focus and break blocks on a timeline, like a calendar day view. History is stored locally in `~/Library/Application Support/Pomodoro/` and takes up about 1 MB per year of daily use.
 - **Menu bar extra** that shows the current phase and time left, with Start/Pause and Skip.
 - **Notifications and sound** when a phase ends. Notifications only work when the app runs as a bundled `.app` (see [Build](#build)).
 - **Adjustable break length** for the current break, on top of the defaults in Settings.
